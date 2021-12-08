@@ -29,6 +29,8 @@ class Bingo_Board:
 
         self.last_num = n
 
+        return 0                    # success
+
     def check_won(self):
         """
         Set self.won to True if this board has won.
@@ -57,7 +59,7 @@ class Bingo_Board:
             if self.marked[i,:].sum() == 5:
                 self.won = True
                 self.won_by_row = i
-                self.won_last_num = last_num
+                self.won_last_num = self.last_num
 
                 return 1             # no need to also check the columns
 
@@ -96,9 +98,76 @@ class Bingo_Board:
 
 
 
-test_numbers = np.array([[1,2,3,4,5], [6,7,8,9,10], [11,12,13,14,15], [16,17,18,19,20], [21,22,23,24,25]])
-test_board = Bingo_Board(test_numbers)
+with open('04-1-input.txt', 'r') as f:
+    stri = f.read()
 
-test_board.print_board()
 
-pdb.set_trace()
+## parse drawn numbers
+numbers_to_draw = []
+while(True):
+    index = stri.find(',')
+
+    if index==-1:               # now comes the last list element
+        index = stri.find('\n')
+        n = int( stri[:index] )
+        numbers_to_draw.append(n)
+        stri = stri[index+1:]   # skip one of the two newlines
+        break
+    else:                       # everything fine; we are still somewhere inside the list
+        n = int( stri[:index] )
+        numbers_to_draw.append(n)
+        stri = stri[index+1:]
+
+print(numbers_to_draw)
+print(stri)
+
+## parse bingo boards
+board_number = 0
+board_list   = []
+while(stri):             # while not empty
+    numbers_list = []
+    stri = stri[1:]         # skip newline
+    for i in range(5):      # row number
+        for j in range(5):  # column number
+            n = int( stri[:3] )
+            numbers_list.append(n)
+            stri = stri[3:] # works regardless of whether the third character is a space or a newline
+
+    assert(len(numbers_list) == 25)
+    numbers = np.array(numbers_list).reshape((5,5))
+
+    board_number += 1
+    board = Bingo_Board(numbers, 'Board ' + str(board_number).zfill(3))
+    board_list.append(board)
+
+
+## begin to draw numbers
+n_played_boards = len(board_list)           # number of boards that haven't won
+last_board_number = -1
+
+index = 0
+while n_played_boards > 1:
+    number = numbers_to_draw[index]
+    for board in board_list:
+        if board.mark(number) is not None:  # board had not won before
+            n_played_boards -= board.check_won()        # can not return None because of the preceding if-statement
+    print('index =', index)
+    print('n_played_boards =', n_played_boards)
+    index += 1
+
+assert(n_played_boards == 1), 'All boards won with the same drawn number.'
+
+for board in board_list:
+    if board.won:
+        continue
+
+    # Now board is the last board that has not won
+    while n_played_boards == 1:
+        number = numbers_to_draw[index]
+        assert(board.mark(number) is not None), 'Something went wrong.'
+        if (board.check_won() == 1):
+            print('Last board has just won with score', board.compute_score())
+            n_played_boards -= 1
+        print('index =', index)
+        print('n_played_boards =', n_played_boards)
+        index += 1

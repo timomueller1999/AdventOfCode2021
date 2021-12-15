@@ -135,6 +135,6 @@ step=0
 while(update_risk_levels()):
     step += 1
     print('After', step, 'steps:')
-    print(risk_levels)
+    print(risk_levels[y_max-1, x_max-1])
 
 print('Least possible risk level:', risk_levels[y_max-1, x_max-1])
